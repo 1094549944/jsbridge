@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    button {
+      width: 200px;
+      height: 40px;
+      border: 1px solid #000;
+      display: block;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  测试
+
+  <button onclick="showLoading()"> showLoading</button>
+  <button onclick="closeLoading()"> closeLoading</button>
+  <button onclick="showAlert()">showAlert</button>
+  <button onclick="toast()">toast</button>
+  <button onclick="pending_payment()">pending_payment</button>
+
+  <script>
+    /*
+ * @Author: jiaxinying 
+ * @Date: 2018-11-02 16:03:25 
+ * @Last Modified by: jiaxinying
+ * @Last Modified time: 2018-11-02 17:06:52
+ * 关于h5 和native 之间的交互 JSBridge 解决问题，偏向前端
+ * 使用URL 拦截方式，借用iframe 
+ */
+
+    /**
+     * ios,使用自有shouldStartLoadWithRequest 方法
+     * 安卓：shouldOverrideUrlLoading
+     * 
+     * 
+     */
+
+
+    var bridge = {
+      'linkNative': function (func, type, params, callback) {
+        var funcId = 'cb_' + +new Date()
+         window[funcId] = callback || function () { }
+        params = params || {}
+
+        var req = {
+          handler: func,
+          params: params || undefined,
+          callback: callback && funcId
+        }
+        var src = 'test://' + type + '?' + JSON.stringify(req)
+
+        var frag = document.createElement('iframe')
+        frag.style.display = 'none'
+
+        frag.src = src
+        document.body.appendChild(frag);
+        setTimeout(function () {
+          document.body.removeChild(frag)
+        }, 1000)
+      },
+      'showLoading': function () {
+
+        this.linkNative('showLoading', 'functional')
+        return this
+      },
+      'closeLoading': function () {
+        this.linkNative('closeLoading', 'functional')
+        return this
+      },
+      'showAlert': function (params) {
+        this.linkNative('showAlert', 'functional', params)
+      },
+      'toast': function (params) {
+        this.linkNative('toast', 'functional', params)
+        return this
+      },
+      // 发起支付请求
+      'pending_payment': function (params, callback) {
+        this.linkNative('pending_payment', 'business', params, callback)
+      }
+    }
+
+
+
+
+    //开启loading
+    function showLoading() {
+      console.log('a')
+      bridge.showLoading()
+    }
+    function closeLoading() {
+      bridge.closeLoading()
+    }
+    function showAlert() {
+      bridge.showAlert('我点击了showAlert')
+    }
+    function toast() {
+      var params = {
+        data: "我是toast"
+      }
+      bridge.toast(params)
+    }
+    function pending_payment() {
+      var params = {
+        orderId: '12uroi2u4oifjidsafj',
+        time: '1234234392483294829',
+        name: '张三'
+      }
+      bridge.pending_payment(params, function () {
+     
+        bridge.showAlert('支付的回调函数')
+        //其他业务代码
+      })
+    }
+  </script>
+</body>
+
+</html>
